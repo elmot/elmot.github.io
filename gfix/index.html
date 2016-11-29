@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+<head>
+    <title>G+ URL fixer</title>
+    <script type="application/javascript">
+        function convert() {
+            var srcUrl = document.getElementById("gplusurl").value;
+            var fixedUrl = srcUrl.replace(/^https:\/\/plus\.google\.com\/u\/\d+\//, "https://plus.google.com/");
+            document.getElementById("targeturl").value = fixedUrl;
+        }
+        function openUrl() {
+            window.open(document.getElementById("targeturl").value, "_blank")
+        }
+    </script>
+    <style type="text/css">
+        * {font-family: "Gentium Basic", Roboto ,Helvetica, serif;
+            font-size: large;
+        }
+        #bg {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            font-size: 20vh;
+            color: #FFE0E0;
+            z-index: -1;
+            overflow: hidden;
+            word-wrap: break-word;
+            word-break: break-all;
+            background-color: #FFFFF8;
+            /*transform: rotate(7deg);*/
+        }
+
+        .container {
+            display: flex;
+            flex-flow: column;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .container * { align-self: center; padding: 0.5em;
+        }
+        .gplus {
+            background-color:rgb(219, 68, 55);
+            color: #FFFFF8;
+            border-radius: 0.1em;
+            font-size: 200%;
+            padding: 0.1em;
+        }
+        button {font-size: 150%}
+        h1 {font-size: 150%}
+    </style>
+</head>
+<div id="bg">
+    Thanks Google! Thanks Google!
+    Thanks Google!
+    Thanks Google!
+    Thanks Google!
+    Thanks Google!
+    Thanks Google!
+    Thanks Google!
+    Thanks Google!
+    Thanks Google!
+    Thanks Google!
+    Thanks Google!
+    Thanks Google!
+    Thanks Google!
+    Thanks Google!
+    Thanks Google!
+    Thanks Google!
+    Thanks Google!
+    Thanks Google!
+    Thanks Google!
+    Thanks Google!
+    Thanks Google!
+    Thanks Google!
+    Thanks Google!
+    Thanks Google!
+</div>
+<div class="container">
+    <h1><span class="gplus">g+</span> URL fixer</h1>
+    <div>
+        Put here broken g+ URL: <input type="url" id="gplusurl"
+                                      onchange="convert()"
+                                      size="120"
+                                      onpaste="convert()" onkeyup="convert()"
+                                      onclick="convert()">
+    </div>
+    <div>
+        Fixed URL: <input id="targeturl" type="url" readonly
+                         onfocus="this.select()"
+                         size="120">
+    </div>
+    <div>
+        <button onclick="openUrl()">Open URL</button>
+    </div>
+</div>
+</html>
