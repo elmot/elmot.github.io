@@ -1,0 +1,160 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, minimum-scale=1"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+    <title>Swipe-layout</title>
+    <script>
+        function clickMe(event) {
+            window.alert(event.srcElement.parentElement.parentElement.style.backgroundColor + 'element')
+        }
+    </script>
+    <style>
+        .wizard-page {
+            position: absolute;
+            width: 100%;
+            height: 120%
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            font-size: 150%;
+            line-height: 150%;
+        }
+
+        p {
+            text-align: center;
+            width: 100%
+        }
+    </style>
+</head>
+
+<body>
+<div class="wizard-page" style="background-color: lightgreen">
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur congue
+    ligula egestas tristique laoreet. Etiam tempus lectus sed tristique cursus.
+    Nunc tristique ligula id pellentesque luctus. Nulla semper, orci ut finibus
+    placerat, ex sem aliquet purus, a rhoncus metus dolor sit amet tortor. Proin
+    placerat orci non arcu interdum, sed blandit nisl finibus. Integer tortor
+    metus, bibendum id dignissim fermentum, auctor et velit. Praesent interdum
+    mauris vehicula sapien mattis sagittis. Ut porttitor, dui sed commodo porta,
+    nibh felis euismod massa, sit amet rutrum nibh sem vitae ex. Nulla hendrerit
+    porta lacus sed pretium. Cras quis nulla arcu. Ut gravida, dolor in posuere
+    ultrices, elit nisi varius enim, vitae malesuada sapien nunc in nisl.
+
+    <p>
+        <button onclick="clickMe(event)">
+            Click me!
+        </button>
+    </p>
+</div>
+<div class="wizard-page" style="background-color: lightyellow">
+    Nullam lorem augue, gravida quis massa nec, egestas accumsan velit. Donec
+    blandit in ex non finibus. Cras et ex vel arcu cursus congue a in massa.
+    Aenean faucibus tellus in tortor auctor, id varius nisi vulputate. Nullam
+    euismod consectetur pretium. Curabitur vehicula porta nulla sit amet
+    sagittis. Pellentesque nec magna scelerisque, eleifend arcu eu, viverra
+    ipsum. Morbi egestas eleifend diam at posuere. Proin pharetra in felis quis
+    faucibus. Interdum et malesuada fames ac ante ipsum primis in faucibus.
+    Pellentesque euismod sapien laoreet luctus tincidunt. Nulla id erat nulla.
+    Donec vestibulum augue consectetur, congue nulla et, maximus leo.
+
+    Quisque maximus accumsan fermentum. In viverra, nulla quis blandit pharetra,
+    arcu neque efficitur eros, eu luctus nibh tellus nec sapien. Duis porta
+    ultricies tempor. Aliquam condimentum arcu quis massa dignissim faucibus.
+    Proin eu mi est. Donec egestas fermentum nulla, non dictum lorem fringilla
+    in. In a viverra est, ut viverra nibh. Aenean fringilla pellentesque dui ut
+    egestas.
+    <p>
+        <button onclick="clickMe(event)">
+            Click me!
+        </button>
+    </p>
+</div>
+<div class="wizard-page" style="background-color: lightpink">
+    Aenean elit sem, euismod eu ante ut, lacinia facilisis sapien. Cras
+    malesuada, libero ac aliquam volutpat, eros ex commodo dui, nec accumsan
+    enim arcu ut nisi. Vestibulum hendrerit mauris volutpat tellus pellentesque,
+    sit amet venenatis magna sodales. Phasellus tincidunt elementum nulla eget
+    placerat. Vivamus eu tempus nisi, a molestie felis. Suspendisse placerat ex
+    quis purus facilisis, id dictum metus ultrices. Donec finibus lectus et
+    sapien tincidunt venenatis. Sed eget maximus justo, vel tincidunt nunc.
+    Nulla feugiat risus a leo maximus accumsan.
+    <p>
+        <button onclick="clickMe(event)">
+            Click me!
+        </button>
+    </p>
+</div>
+<script>
+    const SWIPE_DETECT_THRESHOLD = 0.05;
+    const SWIPE_HAPPENED_THRESHOLD = 0.3;
+    var swipeData = null;
+
+    function touchStart(event) {
+        swipeData = {
+            element: this,
+            x: event.touches[0].screenX,
+            y: event.touches[0].screenY,
+            detected: false
+        };
+        console.log(swipeData)
+    }
+
+    function touchEnd(event) {
+        console.log(event);
+        var coords = swipeDetect(event);
+        if (coords !==null) {
+            if(coords.x > (swipeData.x + SWIPE_HAPPENED_THRESHOLD * window.screen.width))
+            {
+                swipeData.element.style.display = 'none';
+            }
+        }
+        cancelSwipe()
+    }
+
+    function touchMove(event) {
+        swipeDetect(event)
+    }
+
+    function cancelSwipe() {
+        swipeData.element.style.left = "";
+        swipeData = null;
+    }
+    function swipeDetect(event) {
+        if (swipeData === null) return false;
+        var touch = event.changedTouches[0];
+        var x = touch.screenX;
+        var y = touch.screenY;
+        if (y > (swipeData.y + SWIPE_DETECT_THRESHOLD * window.screen.width) ||
+            y < (swipeData.y - SWIPE_DETECT_THRESHOLD * window.screen.height) ||
+            x < swipeData.x) {
+            cancelSwipe();
+            return null;
+        }
+        if (swipeData.detected || x > (swipeData.x + SWIPE_DETECT_THRESHOLD * touch.radiusX)) {
+            swipeData.detected = true;
+            swipeData.element.style.left = (x - swipeData.x) + "px";
+        }
+        return {x: x, y: y, radiusX: touch.radiusX}
+    }
+
+
+    var pages = document.querySelectorAll('div.wizard-page');
+
+    for (i = 0; i < pages.length; i++) {
+        pages[i].addEventListener("touchstart", touchStart);
+        pages[i].addEventListener("touchend", touchEnd);
+        pages[i].addEventListener("touchmove", touchMove);
+    }
+
+</script>
+</body>
+
+</html>
