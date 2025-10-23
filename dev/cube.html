@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebGL Rotating Cube (Red, Green, Blue)</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #111;
+            overflow: hidden; /* Hide scrollbars */
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body onload="main()">
+    <canvas id="webgl-canvas"></canvas>
+
+    <script>
+        // =================================
+        // MAIN FUNCTION
+        // =================================
+        function main() {
+            const canvas = document.querySelector("#webgl-canvas");
+            // Set canvas resolution to match its display size
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+
+            const gl = canvas.getContext("webgl");
+
+            // Check if WebGL is available
+            if (!gl) {
+                alert("Unable to initialize WebGL. Your browser or machine may not support it.");
+                return;
+            }
+
+            // --- Vertex Shader Source ---
+            // Takes vertex position and color.
+            // Multiplies position by matrices to get final screen position.
+            // Passes color to the fragment shader.
+            const vsSource = `
+                attribute vec4 aVertexPosition;
+                attribute vec4 aVertexColor;
+
+                uniform mat4 uModelViewMatrix;
+                uniform mat4 uProjectionMatrix;
+
+                varying lowp vec4 vColor;
+
+                void main(void) {
+                  gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
+                  vColor = aVertexColor;
+                }
+            `;
+
+            // --- Fragment Shader Source ---
+            // Receives the interpolated color (vColor) from the vertex shader.
+            // Sets the pixel's final color.
+            const fsSource = `
+                varying lowp vec4 vColor;
+
+                void main(void) {
+                  gl_FragColor = vColor;
+                }
+            `;
+
+            // Initialize the shader program
+            const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
+
+            // Store shader attribute and uniform locations
+            const programInfo = {
+                program: shaderProgram,
+                attribLocations: {
+                    vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+                    vertexColor: gl.getAttribLocation(shaderProgram, 'aVertexColor'),
+                },
+                uniformLocations: {
+                    projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
+                    modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
+                },
+            };
+
+            // Initialize the buffers (position and color) for the cube
+            const buffers = initBuffers(gl);
+
+            let cubeRotation = 0.0;   // Current rotation angle
+            let lastTime = 0;         // Time of the last frame
+
+            // --- Render Loop ---
+            function render(now) {
+                now *= 0.001;  // convert time to seconds
+                const deltaTime = now - lastTime;
+                lastTime = now;
+
+                // Update the cube's rotation
+                cubeRotation += deltaTime * 0.4; // Rotate 0.4 radians per second
+
+                // Draw the scene
+                drawScene(gl, programInfo, buffers, cubeRotation);
+
+                // Request the next frame
+                requestAnimationFrame(render);
+            }
+            
+            // Start the animation loop
+            requestAnimationFrame(render);
+        }
+
+        // =================================
+        // SHADER HELPER FUNCTIONS
+        // =================================
+
+        /**
+         * Creates and links a shader program from vertex and fragment shader source.
+         */
+        function initShaderProgram(gl, vsSource, fsSource) {
+            const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
+            const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
+
+            const shaderProgram = gl.createProgram();
+            gl.attachShader(shaderProgram, vertexShader);
+            gl.attachShader(shaderProgram, fragmentShader);
+            gl.linkProgram(shaderProgram);
+
+            if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+                alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
+                return null;
+            }
+
+            return shaderProgram;
+        }
+
+        /**
+         * Creates, compiles, and checks a shader.
+         */
+        function loadShader(gl, type, source) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                alert('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                return null;
+            }
+
+            return shader;
+        }
+
+        // =================================
+        // BUFFER INITIALIZATION
+        // =================================
+
+        /**
+         * Creates buffers for the cube's vertices and colors.
+         */
+        function initBuffers(gl) {
+
+            // --- Vertex Positions ---
+            // We need 36 vertices (6 faces * 2 triangles/face * 3 vertices/triangle)
+            // This is because each vertex needs a unique color for its face,
+            // so we can't share vertices between faces.
+            const positions = new Float32Array([
+                // Front face (+Z) - Blue
+                -1.0, -1.0,  1.0,
+                 1.0, -1.0,  1.0,
+                 1.0,  1.0,  1.0,
+                -1.0, -1.0,  1.0,
+                 1.0,  1.0,  1.0,
+                -1.0,  1.0,  1.0,
+
+                // Back face (-Z) - Yellow
+                -1.0, -1.0, -1.0,
+                -1.0,  1.0, -1.0,
+                 1.0,  1.0, -1.0,
+                -1.0, -1.0, -1.0,
+                 1.0,  1.0, -1.0,
+                 1.0, -1.0, -1.0,
+
+                // Top face (+Y) - Green
+                -1.0,  1.0, -1.0,
+                -1.0,  1.0,  1.0,
+                 1.0,  1.0,  1.0,
+                -1.0,  1.0, -1.0,
+                 1.0,  1.0,  1.0,
+                 1.0,  1.0, -1.0,
+
+                // Bottom face (-Y) - Magenta
+                -1.0, -1.0, -1.0,
+                 1.0, -1.0, -1.0,
+                 1.0, -1.0,  1.0,
+                -1.0, -1.0, -1.0,
+                 1.0, -1.0,  1.0,
+                -1.0, -1.0,  1.0,
+
+                // Right face (+X) - Red
+                 1.0, -1.0, -1.0,
+                 1.0,  1.0, -1.0,
+                 1.0,  1.0,  1.0,
+                 1.0, -1.0, -1.0,
+                 1.0,  1.0,  1.0,
+                 1.0, -1.0,  1.0,
+
+                // Left face (-X) - Cyan
+                -1.0, -1.0, -1.0,
+                -1.0, -1.0,  1.0,
+                -1.0,  1.0,  1.0,
+                -1.0, -1.0, -1.0,
+                -1.0,  1.0,  1.0,
+                -1.0,  1.0, -1.0,
+            ]);
+
+            const positionBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+
+            // --- Vertex Colors ---
+            // Define colors for each face.
+            const faceColors = [
+                [0.0, 0.0, 1.0, 1.0], // Front: Blue
+                [1.0, 1.0, 0.0, 1.0], // Back: Yellow
+                [0.0, 1.0, 0.0, 1.0], // Top: Green
+                [1.0, 0.0, 1.0, 1.0], // Bottom: Magenta
+                [1.0, 0.0, 0.0, 1.0], // Right: Red
+                [0.0, 1.0, 1.0, 1.0], // Left: Cyan
+            ];
+
+            // Convert the face colors to a color for each of the 36 vertices.
+            let colors = [];
+            for (let j = 0; j < faceColors.length; ++j) {
+                const c = faceColors[j];
+                // Repeat the color 6 times (for the 6 vertices of the face)
+                for (let i = 0; i < 6; ++i) {
+                    colors = colors.concat(c);
+                }
+            }
+
+            const colorBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+
+            // Note: We are not using an index buffer, so we'll draw 36 vertices directly.
+
+            return {
+                position: positionBuffer,
+                color: colorBuffer,
+                vertexCount: 36,
+            };
+        }
+
+        // =================================
+        // DRAW SCENE
+        // =================================
+        
+        /**
+         * Draws the scene.
+         */
+        function drawScene(gl, programInfo, buffers, cubeRotation) {
+            // Set clear color and enable depth testing
+            gl.clearColor(0.1, 0.1, 0.1, 1.0);  // Clear to dark grey
+            gl.clearDepth(1.0);                 // Clear everything
+            gl.enable(gl.DEPTH_TEST);           // Enable depth testing
+            gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
+
+            // Clear the canvas
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+            // --- Set up Perspective (Camera) ---
+            const fieldOfView = 45 * Math.PI / 180; // 45 degrees, in radians
+            const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+            const zNear = 0.1;
+            const zFar = 100.0;
+            const projectionMatrix = mat4.create();
+            mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
+
+            // --- Set up Model-View (Object Position/Rotation) ---
+            const modelViewMatrix = mat4.create();
+            
+            // Move the cube back 6 units from the camera
+            mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -6.0]);
+            
+            // Rotate around the X-axis
+            mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation * 0.7, [1, 0, 0]);
+            // Rotate around the Y-axis
+            mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation, [0, 1, 0]);
+            // Rotate around the Z-axis
+            mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation * 0.3, [0, 0, 1]);
+
+
+            // --- Tell WebGL how to pull data from buffers ---
+
+            // Position Buffer
+            {
+                const numComponents = 3;  // pull 3 values per iteration (x, y, z)
+                const type = gl.FLOAT;
+                const normalize = false;
+                const stride = 0;
+                const offset = 0;
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
+                gl.vertexAttribPointer(
+                    programInfo.attribLocations.vertexPosition,
+                    numComponents, type, normalize, stride, offset);
+                gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+            }
+
+            // Color Buffer
+            {
+                const numComponents = 4; // pull 4 values per iteration (r, g, b, a)
+                const type = gl.FLOAT;
+                const normalize = false;
+                const stride = 0;
+                const offset = 0;
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color);
+                gl.vertexAttribPointer(
+                    programInfo.attribLocations.vertexColor,
+                    numComponents, type, normalize, stride, offset);
+                gl.enableVertexAttribArray(programInfo.attribLocations.vertexColor);
+            }
+
+            // Tell WebGL to use our shader program
+            gl.useProgram(programInfo.program);
+
+            // Set the shader uniforms
+            gl.uniformMatrix4fv(
+                programInfo.uniformLocations.projectionMatrix,
+                false,
+                projectionMatrix);
+            gl.uniformMatrix4fv(
+                programInfo.uniformLocations.modelViewMatrix,
+                false,
+                modelViewMatrix);
+
+            // --- Draw the Cube ---
+            {
+                const offset = 0;
+                gl.drawArrays(gl.TRIANGLES, offset, buffers.vertexCount);
+            }
+        }
+
+        // =================================
+        // MINIMAL 4x4 MATRIX MATH LIBRARY
+        // (Similar to gl-matrix.js)
+        // =================================
+
+        const mat4 = {
+            /**
+             * Creates a new identity mat4
+             */
+            create: function() {
+                return new Float32Array([
+                    1, 0, 0, 0,
+                    0, 1, 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 1
+                ]);
+            },
+
+            /**
+             * Generates a perspective projection matrix.
+             */
+            perspective: function(out, fov, aspect, near, far) {
+                const f = 1.0 / Math.tan(fov / 2);
+                out[0] = f / aspect;
+                out[1] = 0;
+                out[2] = 0;
+                out[3] = 0;
+                out[4] = 0;
+                out[5] = f;
+                out[6] = 0;
+                out[7] = 0;
+                out[8] = 0;
+                out[9] = 0;
+                out[11] = -1;
+                out[15] = 0;
+                if (far != null && far !== Infinity) {
+                    const nf = 1 / (near - far);
+                    out[10] = (far + near) * nf;
+                    out[14] = (2 * far * near) * nf;
+                } else {
+                    out[10] = -1;
+                    out[14] = -2 * near;
+                }
+                return out;
+            },
+
+            /**
+             * Translates a mat4 by the given vector.
+             * out = a * T(v)
+             */
+            translate: function(out, a, v) {
+                let x = v[0], y = v[1], z = v[2];
+                let a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
+                let a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
+                let a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11];
+                let a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15];
+                
+                if (a === out) {
+                    out[12] = a00 * x + a10 * y + a20 * z + a30;
+                    out[13] = a01 * x + a11 * y + a21 * z + a31;
+                    out[14] = a02 * x + a12 * y + a22 * z + a32;
+                    out[15] = a03 * x + a13 * y + a23 * z + a33;
+                } else {
+                    out[0] = a00; out[1] = a01; out[2] = a02; out[3] = a03;
+                    out[4] = a10; out[5] = a11; out[6] = a12; out[7] = a13;
+                    out[8] = a20; out[9] = a21; out[10] = a22; out[11] = a23;
+                    out[12] = a00 * x + a10 * y + a20 * z + a30;
+                    out[13] = a01 * x + a11 * y + a21 * z + a31;
+                    out[14] = a02 * x + a12 * y + a22 * z + a32;
+                    out[15] = a03 * x + a13 * y + a23 * z + a33;
+                }
+                return out;
+            },
+
+            /**
+             * Rotates a mat4 by the given angle about the given axis.
+             * out = a * R(axis, rad)
+             */
+            rotate: function(out, a, rad, axis) {
+                let x = axis[0], y = axis[1], z = axis[2];
+                let len = Math.hypot(x, y, z);
+                if (len < 0.000001) { return null; }
+                len = 1 / len;
+                x *= len; y *= len; z *= len;
+                
+                let s = Math.sin(rad);
+                let c = Math.cos(rad);
+                let t = 1 - c;
+
+                let a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
+                let a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
+                let a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11];
+                let a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15];
+
+                // Rotation matrix components
+                let b00 = x * x * t + c,     b01 = y * x * t + z * s, b02 = z * x * t - y * s;
+                let b10 = x * y * t - z * s, b11 = y * y * t + c,     b12 = z * y * t + x * s;
+                let b20 = x * z * t + y * s, b21 = y * z * t - x * s, b22 = z * z * t + c;
+
+                // Perform multiplication
+                out[0] = a00 * b00 + a10 * b01 + a20 * b02;
+                out[1] = a01 * b00 + a11 * b01 + a21 * b02;
+                out[2] = a02 * b00 + a12 * b01 + a22 * b02;
+                out[3] = a03 * b00 + a13 * b01 + a23 * b02;
+
+                out[4] = a00 * b10 + a10 * b11 + a20 * b12;
+                out[5] = a01 * b10 + a11 * b11 + a21 * b12;
+                out[6] = a02 * b10 + a12 * b11 + a22 * b12;
+                out[7] = a03 * b10 + a13 * b11 + a23 * b12;
+
+                out[8] = a00 * b20 + a10 * b21 + a20 * b22;
+                out[9] = a01 * b20 + a11 * b21 + a21 * b22;
+                out[10] = a02 * b20 + a12 * b21 + a22 * b22;
+                out[11] = a03 * b20 + a13 * b21 + a23 * b22;
+
+                if (a !== out) { // only copy 4th column if a and out are different
+                    out[12] = a30; out[13] = a31; out[14] = a32; out[15] = a33;
+                }
+                return out;
+            }
+        };
+
+    </script>
+</body>
+</html>
