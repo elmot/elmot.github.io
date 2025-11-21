@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WB55 LED Control (Web Bluetooth)</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body { font-family: system-ui, Segoe UI, Roboto, Arial, sans-serif; margin: 1rem; }
+      button { padding: 0.6rem 1rem; margin: 0.25rem; font-size: 1rem; }
+      #status { white-space: pre-wrap; border: 1px solid #8884; padding: 0.75rem; border-radius: 8px; min-height: 6rem; }
+      .row { margin: 0.5rem 0; }
+      code { user-select: all; }
+    </style>
+  </head>
+  <body>
+    <h2>STM32WB55 Traffic Light Control (Web Bluetooth)</h2>
+    <p>
+      Connect to the custom BLE service on your STM32WB55 and control a traffic light. Click the lights to toggle them.
+      Each light maps to one bit in the packet byte: Green=bit0, Yellow=bit1, Red=bit2.
+    </p>
+    <div class="row">
+      <button id="btnConnect">Connect</button>
+      <button id="btnDisconnect" disabled>Disconnect</button>
+    </div>
+    <div class="row" id="trafficControls" aria-hidden="true">
+      <div id="traffic" role="group" aria-label="Traffic light">
+        <button id="lamp-red" class="lamp red" aria-pressed="false" aria-label="Red"></button>
+        <button id="lamp-yellow" class="lamp yellow" aria-pressed="false" aria-label="Yellow"></button>
+        <button id="lamp-green" class="lamp green" aria-pressed="false" aria-label="Green"></button>
+      </div>
+      <div style="margin-top:0.5rem;font-size:0.9rem;color:#666;">
+        Byte preview: <code id="bytePreview">0x00</code>
+      </div>
+    </div>
+    <div class="row" id="rawRow">
+      <label>
+        Payload (hex, 2 bytes):
+        <input id="payload" value="01 00" size="8" />
+        <button id="btnWrite" disabled>Write Raw</button>
+      </label>
+    </div>
+    <div class="row">
+      <strong>Service UUID:</strong>
+      <code id="svc">0000fe40-cc7a-482a-984a-7f2ed5b3e58f</code>
+      <br />
+      <strong>BLUE_LED Char UUID:</strong>
+      <code id="chr">0000fe41-8e22-4541-9d4c-21edae82ed19</code>
+    </div>
+    <h3>Status</h3>
+    <div id="status"></div>
+
+    <script>
+      const SERVICE_UUID = "0000fe40-cc7a-482a-984a-7f2ed5b3e58f";
+      const LED_CHAR_UUID = "0000fe41-8e22-4541-9d4c-21edae82ed19";
+
+      const $ = (id) => document.getElementById(id);
+      const log = (m) => { const el = $('status'); el.textContent += (m + '\n'); el.scrollTop = el.scrollHeight; };
+      const setEnabled = (enabled) => {
+        $('btnWrite').disabled = !enabled;
+        $('btnDisconnect').disabled = !enabled;
+        $('btnConnect').disabled = enabled;
+        setTrafficEnabled(enabled);
+      };
+
+      let device = null;
+      let server = null;
+      let service = null;
+      let ledChar = null;
+
+      function toBytesFromHex(str) {
+        // Accept formats like "01 00", "0100", "01,00"
+        const hex = str.replace(/[^0-9a-fA-F]/g, '');
+        if (hex.length % 2 !== 0) throw new Error('Hex string must have an even number of digits');
+        const out = new Uint8Array(hex.length / 2);
+        for (let i = 0; i < hex.length; i += 2) {
+          out[i/2] = parseInt(hex.substr(i, 2), 16);
+        }
+        return out;
+      }
+
+      async function connect() {
+        try {
+          log('Requesting Bluetooth device...');
+          device = await navigator.bluetooth.requestDevice({
+            filters: [{/* services: [SERVICE_UUID]*/ namePrefix:"ELM"}],
+             optionalServices: [SERVICE_UUID]
+          });
+          device.addEventListener('gattserverdisconnected', onDisconnected);
+          log(`Connecting to GATT server on: ${device.name || '(unnamed device)'}...`);
+          server = await device.gatt.connect();
+          log('Getting primary service...');
+          service = await server.getPrimaryService(SERVICE_UUID);
+          log('Getting BLUE_LED characteristic...');
+          ledChar = await service.getCharacteristic(LED_CHAR_UUID);
+          log('Connected. You can now control the LED.');
+          setEnabled(true);
+        } catch (err) {
+          log('Error during connect: ' + err.message);
+          await disconnect();
+        }
+      }
+
+      async function disconnect() {
+        try {
+          if (device && device.gatt && device.gatt.connected) {
+            device.gatt.disconnect();
+          }
+        } catch {}
+        setEnabled(false);
+        log('Disconnected');
+      }
+
+      function onDisconnected() {
+        log('Device disconnected');
+        setEnabled(false);
+      }
+
+      // SizeB_Led_C = 2 in firmware; use 2-byte payloads.
+      async function writeLed(value0, value1 = 0x00) {
+        if (!ledChar) throw new Error('Not connected');
+        const payload = new Uint8Array([value0 & 0xFF, value1 & 0xFF]);
+        log(`Writing: [${payload[0].toString(16).padStart(2,'0')} ${payload[1].toString(16).padStart(2,'0')}]`);
+        await ledChar.writeValueWithoutResponse(payload);
+      }
+
+      // ============ Traffic light UI state ============
+      let trafficState = 0; // bit0=green, bit1=yellow, bit2=red
+
+      function bit(mask) { return (trafficState & mask) !== 0; }
+
+      function renderTraffic() {
+        const setLamp = (id, on) => {
+          const el = $(id);
+          if (!el) return;
+          el.classList.toggle('on', !!on);
+          el.setAttribute('aria-pressed', on ? 'true' : 'false');
+        };
+        setLamp('lamp-green', bit(1));
+        setLamp('lamp-yellow', bit(2));
+        setLamp('lamp-red', bit(4));
+        $('bytePreview').textContent = '0x' + trafficState.toString(16).padStart(2,'0').toUpperCase();
+      }
+
+      function setTrafficEnabled(enabled) {
+        const ctrls = $('trafficControls');
+        ctrls.style.opacity = enabled ? '1' : '0.5';
+        ctrls.setAttribute('aria-hidden', enabled ? 'false' : 'true');
+        ['lamp-green','lamp-yellow','lamp-red'].forEach(id => {
+          const el = $(id);
+          el.disabled = !enabled;
+        });
+      }
+
+      async function applyTrafficWrite() {
+        try {
+          await writeLed(trafficState & 0xFF, 0x00);
+        } catch (e) {
+          log('Write failed: ' + e.message);
+        }
+      }
+
+      function toggleLamp(mask) {
+        trafficState ^= mask;
+        renderTraffic();
+        applyTrafficWrite();
+      }
+
+      $('btnConnect').addEventListener('click', connect);
+      $('btnDisconnect').addEventListener('click', disconnect);
+      $('lamp-green').addEventListener('click', () => toggleLamp(1));
+      $('lamp-yellow').addEventListener('click', () => toggleLamp(2));
+      $('lamp-red').addEventListener('click', () => toggleLamp(4));
+      $('btnWrite').addEventListener('click', () => {
+        try {
+          const bytes = toBytesFromHex($('payload').value);
+          if (bytes.length !== 2) throw new Error('Expected exactly 2 bytes');
+          ledChar.writeValueWithoutResponse(bytes).catch(e => log(e.message));
+        } catch (e) {
+          log('Invalid payload: ' + e.message);
+        }
+      });
+
+      // Feature detection and usage notes
+      if (!('bluetooth' in navigator)) {
+        log('Error: This browser does not support Web Bluetooth. Use recent Chrome/Edge/Opera on desktop or Android.');
+      } else {
+        log('Tip: Web Bluetooth works only on HTTPS or http://localhost. If opening this file directly, serve it via a local web server.');
+      }
+
+      // Initialize UI
+      renderTraffic();
+      setTrafficEnabled(false);
+    </script>
+    <style>
+      /* Traffic light styles */
+      #traffic {
+        width: 120px;
+        padding: 14px 14px;
+        background: linear-gradient(180deg, #333, #111);
+        border-radius: 16px;
+        border: 2px solid #0008;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        box-shadow: inset 0 2px 8px #0008, 0 8px 16px #0006;
+      }
+      .lamp {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        border: 2px solid #000a;
+        background: radial-gradient(circle at 30% 30%, #555, #222);
+        box-shadow: inset 0 8px 16px #000a, 0 2px 6px #0008;
+        cursor: pointer;
+      }
+      .lamp:disabled { cursor: not-allowed; opacity: 0.6; }
+      .lamp.red.on { background: radial-gradient(circle at 30% 30%, #ff8a80, #d50000); box-shadow: 0 0 12px 6px #ff1744aa, inset 0 8px 16px #000a; }
+      .lamp.yellow.on { background: radial-gradient(circle at 30% 30%, #ffe57f, #ffab00); box-shadow: 0 0 12px 6px #ffd600aa, inset 0 8px 16px #000a; }
+      .lamp.green.on { background: radial-gradient(circle at 30% 30%, #a5d6a7, #00c853); box-shadow: 0 0 12px 6px #00e676aa, inset 0 8px 16px #000a; }
+      .lamp.red { background: radial-gradient(circle at 30% 30%, #733, #300); }
+      .lamp.yellow { background: radial-gradient(circle at 30% 30%, #664, #331); }
+      .lamp.green { background: radial-gradient(circle at 30% 30%, #364, #132); }
+    </style>
+  </body>
+  </html>
