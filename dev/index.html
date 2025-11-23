@@ -1,227 +1,135 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>elmot — Dashboards & Traffic Lights</title>
-
-  <!-- Use a clean system stack first, fall back to a webfont if available -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-
-  <style>
-    :root{
-      --bg-1: #0f172a;
-      --bg-2: #071029;
-      --card: rgba(255,255,255,0.06);
-      --accent: linear-gradient(135deg,#00d2ff 0%, #3a7bd5 100%);
-      --glass: rgba(255,255,255,0.04);
-      --text: #e6eef8;
-      --muted: #9fb3d2;
-      --radius: 14px;
-    }
-    html,body{
-      height:100%;
-      margin:0;
-      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      background: radial-gradient(1200px 600px at 10% 10%, rgba(58,123,213,0.15), transparent 6%),
-                  radial-gradient(1000px 400px at 90% 90%, rgba(0,210,255,0.06), transparent 6%),
-                  linear-gradient(180deg,var(--bg-1),var(--bg-2));
-      color:var(--text);
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-    }
-
-    .wrap{
-      min-height:100%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:48px 20px;
-      box-sizing:border-box;
-    }
-
-    .panel{
-      width:100%;
-      max-width:980px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-      border-radius: calc(var(--radius) + 6px);
-      padding:28px;
-      box-shadow: 0 10px 30px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
-      backdrop-filter: blur(8px) saturate(120%);
-      border: 1px solid rgba(255,255,255,0.03);
-    }
-
-    header{
-      display:flex;
-      align-items:center;
-      gap:16px;
-      margin-bottom:18px;
-    }
-
-    .logo{
-      width:56px;
-      height:56px;
-      border-radius:12px;
-      background:var(--accent);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color:#fff;
-      font-weight:700;
-      font-size:20px;
-      box-shadow: 0 6px 18px rgba(58,123,213,0.18);
-      flex:0 0 56px;
-    }
-
-    h1{
-      margin:0;
-      font-size:20px;
-      letter-spacing:-0.01em;
-    }
-
-    p.lead{
-      margin:6px 0 0 0;
-      color:var(--muted);
-      font-size:13px;
-    }
-
-    .grid{
-      display:grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
-      gap:16px;
-      margin-top:20px;
-    }
-
-    .card{
-      background: linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));
-      border-radius:12px;
-      padding:18px;
-      border:1px solid rgba(255,255,255,0.03);
-      box-shadow: 0 8px 20px rgba(2,6,23,0.45);
-      transition: transform .18s ease, box-shadow .18s ease;
-      display:flex;
-      align-items:center;
-      gap:12px;
-      text-decoration:none;
-      color:inherit;
-    }
-
-    .card:hover{
-      transform: translateY(-6px);
-      box-shadow: 0 18px 40px rgba(2,6,23,0.6);
-    }
-
-    .thumb{
-      width:56px;
-      height:56px;
-      border-radius:10px;
-      background:var(--glass);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      flex:0 0 56px;
-      color:var(--text);
-      font-weight:600;
-      font-size:14px;
-      border:1px solid rgba(255,255,255,0.02);
-    }
-
-    .meta{
-      display:flex;
-      flex-direction:column;
-    }
-
-    .meta .title{
-      font-weight:600;
-      font-size:15px;
-      margin:0 0 4px 0;
-    }
-
-    .meta .desc{
-      font-size:13px;
-      color:var(--muted);
-      margin:0;
-    }
-
-    .external {
-      margin-left:auto;
-      font-size:12px;
-      color:var(--muted);
-    }
-
-    footer{
-      margin-top:18px;
-      color:var(--muted);
-      font-size:13px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:12px;
-    }
-
-    @media (max-width:560px){
-      .panel{ padding:18px; }
-      header{ gap:12px; }
-      .logo{ width:48px; height:48px; font-size:18px; border-radius:10px; }
-      .thumb{ width:48px; height:48px; border-radius:8px; }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            /* Sticky footer layout */
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        /* Content wrapper */
+        .page {
+            flex: 1;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        table.links a {
+            text-decoration: none;
+            color: #0066cc;
+            font-size: 18px;
+        }
+        table.links a:hover {
+            text-decoration: underline;
+        }
+        table.links {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table.links td {
+            padding: 10px 8px;
+            vertical-align: middle;
+            border-bottom: 1px solid #eee;
+        }
+        table.links td.icon {
+            width: 42px;
+            text-align: center;
+        }
+        /* Allow two icons in a row for the Serial row */
+        table.links td.icon.two {
+            width: auto;
+            white-space: nowrap;
+        }
+        .icon svg,
+        .icon img {
+            width: 24px;
+            height: 24px;
+            display: inline-block;
+        }
+        .muted {
+            color: #555;
+            font-size: 14px;
+        }
+        .muted a {
+            color: #555;
+            font-size: 14px;
+        }
+        /* Footer at the bottom with the same max width */
+        footer {
+            margin-top: auto;
+            max-width: 600px;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 16px 20px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
 </head>
 <body>
-  <div class="wrap">
-    <main class="panel" role="main" aria-labelledby="main-title">
-      <header>
-        <div class="logo" aria-hidden="true">el</div>
-        <div>
-          <h1 id="main-title">elmot — Traffic Lights & Dashboard</h1>
-          <p class="lead">Quick access to local traffic-light demos and the online home-air-conditions dashboard.</p>
-        </div>
-      </header>
+    <main class="page">
+    <h1>Links</h1>
+    <!-- Using Wikimedia-hosted free SVGs (hotlinked) -->
 
-      <section class="grid" aria-label="Navigation links">
-        <a class="card" href="ble-traffic-light.html">
-          <div class="thumb" aria-hidden="true">BLE</div>
-          <div class="meta">
-            <div class="title">ble-traffic-light.html</div>
-            <div class="desc">Bluetooth Low Energy traffic light demo</div>
-          </div>
-        </a>
-
-        <a class="card" href="serial-traffic-light.html">
-          <div class="thumb" aria-hidden="true">SER</div>
-          <div class="meta">
-            <div class="title">serial-traffic-light.html</div>
-            <div class="desc">Serial (UART) traffic light demo</div>
-          </div>
-        </a>
-
-        <a class="card" href="hid-traffic-light.html">
-          <div class="thumb" aria-hidden="true">HID</div>
-          <div class="meta">
-            <div class="title">hid-traffic-light.html</div>
-            <div class="desc">Human Interface Device (HID) traffic light demo</div>
-          </div>
-        </a>
-
-        <a class="card" href="usb-traffic-light.html">
-          <div class="thumb" aria-hidden="true">USB</div>
-          <div class="meta">
-            <div class="title">usb-traffic-light.html</div>
-            <div class="desc">USB traffic light demo</div>
-          </div>
-        </a>
-
-        <a class="card" href="https://io.adafruit.com/elmot/dashboards/home-air-conditions">
-          <div class="thumb" aria-hidden="true">WiFi</div>
-          <div class="meta">
-            <div class="title">Adafruit IO — Home Air Conditions</div>
-          </div>
-          <div class="external" aria-hidden="true">↗</div>
-        </a>
-      </section>
-
+    <table class="links" aria-label="Links table">
+        <tbody>
+            <tr>
+                <td class="icon" title="WiFi" aria-label="WiFi">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Wifi_symbol.svg" alt="Wi‑Fi icon" width="24" height="24"/>
+                </td>
+                <td>
+                    <a href="https://io.adafruit.com/elmot/dashboards/home-air-conditions"><b>WiFi</b> + <b>MQTT</b></a> (Adafruit IO)
+                </td>
+            </tr>
+            <tr>
+                <td class="icon" title="Bluetooth Low Energy" aria-label="Bluetooth Low Energy">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/Bluetooth_Figure_Mark_Logo.svg" alt="Bluetooth icon" width="24" height="24"/>
+                </td>
+                <td>
+                    <a href="ble-traffic-light.html"><b>Bluetooth Low Energy</b> aka <b>BLE</b></a>
+                </td>
+            </tr>
+            <tr>
+                <td class="icon two" aria-hidden="true">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/6/67/USB_icon.svg" alt="USB icon" width="24" height="24"/>
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/Bluetooth_Figure_Mark_Logo.svg" alt="Bluetooth icon" width="24" height="24"/>
+                </td>
+                <td>
+                    <a href="serial-traffic-light.html"><b>Serial Port</b> aka <b>COM</b> aka <b>UART</b> <span class="muted">(cable or Bluetooth Classic)</span></a>
+                </td>
+            </tr>
+            <tr>
+                <td class="icon" title="USB" aria-label="USB">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/6/67/USB_icon.svg" alt="USB icon" width="24" height="24"/>
+                </td>
+                <td>
+                    <a href="hid-traffic-light.html"><b>USB Custom HID</b> device <span class="muted">(cable)</span></a>
+                </td>
+            </tr>
+            <tr>
+                <td class="icon" title="USB" aria-label="USB">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/6/67/USB_icon.svg" alt="USB icon" width="24" height="24"/>
+                </td>
+                <td>
+                    <a href="usb-traffic-light.html"><b>USB Vendor Specific Device</b> <span class="muted">(cable)</span></a>
+                </td>
+            </tr>
+        </tbody>
+    </table>
     </main>
-  </div>
+
+    <footer class="muted">
+        Icons: 
+        <a href="https://commons.wikimedia.org/wiki/File:Wifi_symbol.svg">Wi‑Fi</a>,
+        <a href="https://commons.wikimedia.org/wiki/File:Bluetooth_Figure_Mark_Logo.svg">Bluetooth</a>,
+        <a href="https://commons.wikimedia.org/wiki/File:USB_icon.svg">USB</a>
+        from Wikimedia Commons.
+    </footer>
 </body>
 </html>
