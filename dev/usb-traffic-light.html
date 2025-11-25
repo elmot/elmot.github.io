@@ -22,7 +22,7 @@
       This page connects to the board via WebUSB and sends 2 bytes to an OUT endpoint.<br/>
       Use vendor-specific (WinUSB/libusb) interface or any interface accessible from WebUSB.
     </p>
-    <p class="muted">Requirements: Chrome/Edge over HTTPS or http://localhost, and a user gesture to pair. Note: HID-class interfaces are owned by the OS driver; prefer a vendor-specific interface exposed for WebUSB.</p>
+    <p class="muted">Requirements: Chrome/Edge over HTTPS or http://localhost, and a user gesture to pair.</p>
 
     <div class="row">
       <button id="pair">Pair device…</button>
@@ -30,17 +30,7 @@
       <button id="disconnect" disabled>Close</button>
     </div>
     <div id="status" class="muted">Not paired</div>
-    <fieldset style="max-width:520px">
-      <legend>USB interface</legend>
-      <div class="row">
-        <label>Interface # <input id="ifNum" type="number" min="0" value="0" style="width:5rem"/></label>
-        <label>OUT EP # <input id="epOut" type="number" min="1" value="1" style="width:5rem"/></label>
-        <label>IN EP # <input id="epIn" type="number" min="1" value="1" style="width:5rem"/></label>
-        <label>Config # <input id="cfgNum" type="number" min="1" value="1" style="width:5rem"/></label>
-      </div>
-      <div class="muted" style="font-size:0.9rem">Tip: You can override via URL, e.g. ?if=0&epout=1&epin=1&cfg=1</div>
-    </fieldset>
-    <div class="row" id="trafficControls" aria-hidden="true">
+    <div id="trafficControls" aria-hidden="true">
       <div id="traffic" role="group" aria-label="Traffic light">
         <button id="lamp-red" class="lamp red" aria-pressed="false" aria-label="Red"></button>
         <button id="lamp-yellow" class="lamp yellow" aria-pressed="false" aria-label="Yellow"></button>
@@ -54,11 +44,11 @@
 
     <h3>Log</h3>
     <div id="log" aria-live="polite"></div>
-
+    <div><a href="./">Examples</a></div>
     <script>
       // Update these IDs if you change descriptors (see USB_DEVICE/App/usbd_desc.c)
-      const VID = 1155;   // 0x0483 (STMicroelectronics)
-      const PID = 22352;  // from USBD_PID_FS
+      const VID = 0x1209;   // 0x0483 (STMicroelectronics)
+      const PID = 0xE116;  // from USBD_PID_FS
 
       // Behavior flags (can be overridden via URL, e.g., ?auto=1&reopen=1&if=0&epout=1&epin=1&cfg=1)
       const params = new URLSearchParams(location.search);
@@ -104,6 +94,7 @@
       function setUI(phase) {
         const paired = !!device;
         const opened = paired && device.opened;
+        btnPair.disabled = opened;
         btnOpen.disabled = !paired || opened;
         btnClose.disabled = !paired || !opened;
         // Enable/disable traffic controls
